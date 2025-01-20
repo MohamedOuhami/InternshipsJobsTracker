@@ -41,11 +41,15 @@ public class AuthController {
     // Receive the token from the auth service
     String token = authService.login(loginDto);
 
+
     System.out.println("This is supposed to be the token " + token);
+
+    User foundUser = userRepository.findByEmail(loginDto.getEmail()).get();
 
     // Set the token as a response using JwtAuthResponse Dto class
     AuthResponseDto authResponseDto = new AuthResponseDto();
     authResponseDto.setAccessToken(token);
+    authResponseDto.setId(foundUser.getId());
 
     // Return the response to the user
     return new ResponseEntity<>(authResponseDto,HttpStatus.OK);

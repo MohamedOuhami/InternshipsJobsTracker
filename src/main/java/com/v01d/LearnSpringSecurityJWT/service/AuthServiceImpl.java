@@ -87,7 +87,7 @@ public class AuthServiceImpl {
       // Hash the password before storing
       String hashedPassword = BCrypt.hashpw(enteredPassword, BCrypt.gensalt());
       User userToSave = new User(registerDto.getFirstName(), registerDto.getLastName(), registerDto.getUsername(),
-          registerDto.getEmail(), hashedPassword,adminSet);
+          registerDto.getEmail(), hashedPassword,adminSet,registerDto.getDob());
 
       User userSaved = userRepository.save(userToSave);
       return userSaved;
