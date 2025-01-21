@@ -9,6 +9,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,61 +18,67 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * SecurityConfig
- */
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+    @Autowired
+    private UserDetailsService userDetailsService;
+    private JwtAuthenticationEntryPoint authenticationEntryPoint;
+    @Autowired
+    private JwtAuthenticationFilter authenticationFilter;
 
-  @Autowired
-  private UserDetailsService userDetailsService;
+    @Bean
+    public static PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-  private JwtAuthenticationEntryPoint authenticationEntryPoint;
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                    .allowedOrigins("http://localhost:4200")
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedHeaders("*")
+                    .allowCredentials(true);
+            }
+        };
+    }
 
-  @Autowired
-  private JwtAuthenticationFilter authenticationFilter;
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests((authorize) -> {
+                authorize.requestMatchers("/api/v1/auth/**").permitAll();
+                authorize.requestMatchers("/swagger-ui/**").permitAll();
+                authorize.requestMatchers("/v3/api-docs/**").permitAll();
+                authorize.requestMatchers("/api/v1/users/activateAccount/**").permitAll();
+                authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                authorize.anyRequest().authenticated();
+            }).httpBasic(Customizer.withDefaults());
 
-  @Bean
-  public static PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+        http.exceptionHandling(exception -> exception
+            .authenticationEntryPoint(authenticationEntryPoint));
+        
+        http.addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        
+        return http.build();
+    }
 
-  @Bean
-  public WebMvcConfigurer corsConfigurer() {
-    return new WebMvcConfigurer() {
-      @Override
-      public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-            .allowedOrigins("http://localhost:4200")
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-            .allowCredentials(true);
-      }
-    };
-  }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
 
-  // Disable the COR
-  @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-    http.csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests((authorize) -> {
-          authorize.requestMatchers("/api/v1/auth/**").permitAll();
-          authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
-          authorize.anyRequest().authenticated();
-        }).httpBasic(Customizer.withDefaults());
-
-    http.exceptionHandling(exception -> exception
-        .authenticationEntryPoint(authenticationEntryPoint));
-
-    http.addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-    return http.build();
-  }
-
-  @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-    return configuration.getAuthenticationManager();
-  }
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+            .requestMatchers(
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/webjars/**"
+            );
+    }
 }

@@ -1,9 +1,11 @@
 package com.v01d.LearnSpringSecurityJWT.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.cglib.core.Local;
 import org.springframework.expression.spel.ast.OpOr;
 
 import jakarta.persistence.Column;
@@ -61,6 +63,12 @@ public class User {
   @OneToMany(mappedBy = "creator")
   private List<Job> jobs;
 
+  private boolean isActivated;
+
+  private int activationCode;
+
+  private LocalDateTime lastSentCode;
+
   public User() {
   }
 
@@ -72,5 +80,6 @@ public class User {
     this.password = password;
     this.roles = roles;
     this.dob = dob;
+    this.isActivated = false;
   }
 }

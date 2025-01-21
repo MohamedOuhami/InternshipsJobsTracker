@@ -16,6 +16,8 @@ import com.v01d.LearnSpringSecurityJWT.dto.RegisterDto;
 import com.v01d.LearnSpringSecurityJWT.model.User;
 import com.v01d.LearnSpringSecurityJWT.repository.UserRepository;
 import com.v01d.LearnSpringSecurityJWT.service.AuthServiceImpl;
+import com.v01d.LearnSpringSecurityJWT.service.UserService;
+import com.v01d.LearnSpringSecurityJWT.util.EmailSender;
 
 /**
  * AuthController
@@ -29,6 +31,9 @@ public class AuthController {
 
   @Autowired
   private UserRepository userRepository;
+
+  @Autowired
+  private UserService userService;
   
 
   @PostMapping("/login")
@@ -59,6 +64,8 @@ public class AuthController {
   public ResponseEntity<User> register(@RequestBody RegisterDto registerDto) throws Exception{
 
     User userSaved = authService.register(registerDto);
+
+    userService.sendActivationAccount(registerDto.getEmail());
     return ResponseEntity.ok(userSaved);
   }
   
